@@ -1,0 +1,51 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Brazil Macro Dashboard",
+    "section": "",
+    "text": "Dados coletados na renderização. Se a API falhar, o painel usa backup .rds e exibe um aviso discreto."
+  },
+  {
+    "objectID": "index.html#atividade-moeda",
+    "href": "index.html#atividade-moeda",
+    "title": "Brazil Macro Dashboard",
+    "section": "Atividade & Moeda",
+    "text": "Atividade & Moeda\n\nSéries (tabela)Gráficos"
+  },
+  {
+    "objectID": "index.html#inflação-expectativas",
+    "href": "index.html#inflação-expectativas",
+    "title": "Brazil Macro Dashboard",
+    "section": "Inflação & Expectativas",
+    "text": "Inflação & Expectativas\n\nFocus — IPCA (tabela)Focus — IPCA (gráfico)Política Monetária"
+  },
+  {
+    "objectID": "index.html#mercado-de-trabalho-risco-ipea",
+    "href": "index.html#mercado-de-trabalho-risco-ipea",
+    "title": "Brazil Macro Dashboard",
+    "section": "Mercado de Trabalho & Risco (IPEA)",
+    "text": "Mercado de Trabalho & Risco (IPEA)\n\nTabelasGráficos\n\n\n\n\nRequesting Ipeadata API &lt;http://www.ipeadata.gov.br/&gt;\n\n  |                                                                            \n  |                                                                      |   0%\n  |                                                                            \n  |======================================================================| 100%"
+  },
+  {
+    "objectID": "index.html#preços-ao-consumidor-ibgesidra",
+    "href": "index.html#preços-ao-consumidor-ibgesidra",
+    "title": "Brazil Macro Dashboard",
+    "section": "Preços ao Consumidor (IBGE/SIDRA)",
+    "text": "Preços ao Consumidor (IBGE/SIDRA)\n\nTabelaGráfico"
+  },
+  {
+    "objectID": "index.html#ocde-db.nomics",
+    "href": "index.html#ocde-db.nomics",
+    "title": "Brazil Macro Dashboard",
+    "section": "OCDE (DB.NOMICS)",
+    "text": "OCDE (DB.NOMICS)\n\nTabelaGráfico"
+  },
+  {
+    "objectID": "index.html#fmi-db.nomics",
+    "href": "index.html#fmi-db.nomics",
+    "title": "Brazil Macro Dashboard",
+    "section": "FMI (DB.NOMICS)",
+    "text": "FMI (DB.NOMICS)\n\nTabelaGráfico"
+  }
+]

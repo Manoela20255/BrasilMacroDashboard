@@ -1,0 +1,19 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Brazil Macro Dashboard"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Início
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 2
+
+execute:
+  freeze: auto

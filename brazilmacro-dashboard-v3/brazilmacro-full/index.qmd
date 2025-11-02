@@ -1,0 +1,233 @@
+---
+title: "Brazil Macro Dashboard"
+page-layout: full
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 2
+    code-fold: false
+    code-copy: false
+execute:
+  echo: false
+  warning: false
+  message: false
+  freeze: false
+date: last-modified
+---
+
+```{r}
+source("libs.R")
+source("data.R")
+source("viz.R")
+options(lifecycle_verbosity = "warning")
+```
+
+> Dados coletados na renderização. Se a API falhar, o painel usa **backup `.rds`** e exibe um aviso discreto.
+
+## Atividade & Moeda
+
+:::: {.panel-tabset}
+### Séries (tabela)
+```{r}
+sgs1 <- fetch_sgs_basico()
+sgs2 <- fetch_sgs_multi()
+tbl_export(head(sgs1, 20), caption = "SELIC diária — BCB/SGS (cód. 432)")
+tbl_export(head(sgs2, 12), caption = "Dólar (3698), IBC-Br (24363), Resultado Primário (5793) — BCB/SGS")
+```
+
+### Gráficos
+```{r}
+p_selic <- ts_plot(sgs1, x = ref.date, y = value, title = "SELIC (diária)", source_caption = "Fonte: BCB/SGS — série 432")
+to_plotly(p_selic)
+```
+
+```{r}
+library(tidyr)
+sgs2_long <- sgs2 |>
+  pivot_longer(-ref.date, names_to = "Série", values_to = "valor")
+
+p_sgs2 <- ggplot(sgs2_long, aes(ref.date, valor)) +
+  geom_line() +
+  facet_wrap(~ `Série`, scales = "free_y", ncol = 1) +
+  labs(title = "Dólar, IBC-Br e Resultado Primário",
+       caption = "Fonte: BCB/SGS — (3698; 24363; 5793)", y = NULL) +
+  theme_report()
+to_plotly(p_sgs2)
+```
+::::
+
+## Inflação & Expectativas
+
+:::: {.panel-tabset}
+### Focus — IPCA (tabela)
+```{r}
+focus <- fetch_focus_ipca_mensal()
+tbl_export(head(focus, 24), caption = "Focus/BCB — IPCA (média mensal da Mediana; baseCalculo = 0)")
+```
+
+### Focus — IPCA (gráfico)
+```{r}
+p_focus <- ggplot(focus, aes(as.Date(ano_mes), expectativa_mensal, group = data_ref)) +
+  geom_line(alpha = 0.5) +
+  labs(title = "Focus: IPCA — média mensal da mediana por Data de Referência",
+       subtitle = "Base de cálculo = 0",
+       caption = "Fonte: BCB — get_market_expectations", y = NULL) +
+  theme_report()
+to_plotly(p_focus)
+```
+
+### Política Monetária
+```{r}
+# Coleta com fallback
+focus_top5   <- fetch_focus_top5()
+ipca_12m_res <- fetch_focus_ipca_12m()
+swaps_res    <- fetch_swap_di_360()
+
+# Avisos discretos se cache usado
+if (isTRUE(focus_top5$cache_used)) {
+  cache_date <- if (!is.na(focus_top5$cache_date)) format(as.Date(focus_top5$cache_date), "%d/%m/%Y") else "data anterior"
+  cat(sprintf("<div class='notice'>⚠️ Dados do Focus indisponíveis — exibindo último backup (%s).</div>", cache_date))
+}
+if (isTRUE(ipca_12m_res$cache_used)) {
+  cache_date <- if (!is.na(ipca_12m_res$cache_date)) format(as.Date(ipca_12m_res$cache_date), "%d/%m/%Y") else "data anterior"
+  cat(sprintf("<div class='notice'>⚠️ IPCA 12m indisponível — exibindo último backup (%s).</div>", cache_date))
+}
+if (isTRUE(swaps_res$cache_used)) {
+  cache_date <- if (!is.na(swaps_res$cache_date)) format(as.Date(swaps_res$cache_date), "%d/%m/%Y") else "data anterior"
+  cat(sprintf("<div class='notice'>⚠️ Swap DI 360 indisponível — exibindo último backup (%s).</div>", cache_date))
+}
+
+top5      <- focus_top5$df
+ipca_12m  <- ipca_12m_res$df
+swaps     <- swaps_res$df
+
+# Cálculos
+juro_neutro <- calc_juro_neutro(top5)
+juro_real   <- calc_juro_real_exante(ipca_12m, swaps)
+
+# Tabelas exportáveis
+tbl_export(head(top5, 20),    caption = "Focus Top 5 — IPCA, PIB, Selic, Câmbio (média mensal, base=0)")
+tbl_export(head(ipca_12m, 12), caption = "Focus — IPCA 12 meses (suavizada, base=0)")
+tbl_export(head(swaps, 12),    caption = "IPEA — Swap DI 360 (média do período)")
+tbl_export(head(juro_real,12), caption = "Juro Real Ex-Ante (swap vs IPCA 12m)")
+tbl_export(head(juro_neutro,8),caption = "Juro Neutro Ex-Ante (Selic/IPCA, 3 anos à frente)")
+```
+
+```{r}
+# Gráficos
+p_top5 <- ggplot(top5, aes(as.Date(ano_mes), expectativa_media, color = indicador)) +
+  geom_line() +
+  labs(title = "Focus Top 5 — IPCA, PIB, Selic, Câmbio (média mensal)",
+       caption = "Fonte: BCB — get_market_expectations", y = NULL) +
+  theme_report()
+to_plotly(p_top5)
+```
+
+```{r}
+p_ipca12 <- ts_plot(ipca_12m, x = data, y = ipca, title = "IPCA — 12 meses (Focus, suavizada)", source_caption = "Fonte: BCB — get_market_expectations")
+to_plotly(p_ipca12)
+```
+
+```{r}
+p_swap <- ts_plot(swaps, x = data, y = swap, title = "Swap DI 360 — média do período (IPEA)", source_caption = "Fonte: IPEA — BMF12_SWAPDI36012")
+to_plotly(p_swap)
+```
+
+```{r}
+p_real <- ts_plot(juro_real, x = data, y = ex_ante, title = "Juro real ex-ante (swap x IPCA 12m)", source_caption = "Fonte: Cálculo próprio com IPEA (swap) e BCB (IPCA 12m)")
+to_plotly(p_real)
+```
+
+```{r}
+p_neutro <- ts_plot(juro_neutro, x = data, y = neutro, title = "Juro neutro ex-ante", source_caption = "Fonte: Cálculo próprio com Focus/BCB (Selic/IPCA 3 anos à frente)")
+to_plotly(p_neutro)
+```
+::::
+
+## Mercado de Trabalho & Risco (IPEA)
+
+:::: {.panel-tabset}
+### Tabelas
+```{r}
+ipea <- fetch_ipea_caged_embi()
+tbl_export(head(ipea, 12), caption = "IPEAdata — CAGED (saldo 12m) e EMBI Brasil")
+```
+
+### Gráficos
+```{r}
+ipea_long <- ipea |>
+  tidyr::pivot_longer(cols = c(caged, embi_br), names_to = "Série", values_to = "valor")
+
+p_ipea <- ggplot(ipea_long, aes(data, valor)) +
+  geom_line() +
+  facet_wrap(~ `Série`, scales = "free_y", ncol = 1) +
+  labs(title = "CAGED (saldo 12m) e EMBI Brasil",
+       caption = "Fonte: IPEAdata — CAGED12_SALDON12; JPM366_EMBI366", y = NULL) +
+  theme_report()
+to_plotly(p_ipea)
+```
+::::
+
+## Preços ao Consumidor (IBGE/SIDRA)
+
+:::: {.panel-tabset}
+### Tabela
+```{r}
+sidra <- fetch_sidra_ipca()
+tbl_export(head(sidra, 24), caption = "IBGE/SIDRA — IPCA (tabela 7060, v=63)")
+```
+
+### Gráfico
+```{r}
+p_sidra <- ts_plot(sidra, x = data, y = ipca, title = "IPCA — índice (mensal)", source_caption = "Fonte: IBGE/SIDRA — tabela 7060, v=63")
+to_plotly(p_sidra)
+```
+::::
+
+## OCDE (DB.NOMICS)
+
+:::: {.panel-tabset}
+### Tabela
+```{r}
+ocde <- fetch_ocde_desemprego()
+tbl_export(head(ocde, 24), caption = "OECD/MEI via DB.NOMICS — desemprego (STSA, M)")
+```
+
+### Gráfico
+```{r}
+ocde_plot <- ocde |>
+  dplyr::mutate(data_dt = as.Date(paste0(data, "-01")))
+
+p_ocde <- ggplot(ocde_plot, aes(data_dt, valor, color = pais)) +
+  geom_line() +
+  labs(title = "Taxa de desemprego harmonizada (mensal; STSA)",
+       caption = "Fonte: OECD/MEI via DB.NOMICS", y = NULL) +
+  theme_report()
+to_plotly(p_ocde)
+```
+::::
+
+## FMI (DB.NOMICS)
+
+:::: {.panel-tabset}
+### Tabela
+```{r}
+fmi <- fetch_fmi_reer_exemplo()
+tbl_export(head(fmi, 12), caption = "IMF/IFS via DB.NOMICS — REER (EREER_IX) AU/CA/CL")
+```
+
+### Gráfico
+```{r}
+fmi_long <- fmi |>
+  tidyr::pivot_longer(-period, names_to = "pais", values_to = "valor") |>
+  dplyr::mutate(data_dt = as.Date(paste0(period, "-01")))
+
+p_fmi <- ggplot(fmi_long, aes(data_dt, valor, color = pais)) +
+  geom_line() +
+  labs(title = "Taxa de câmbio real efetiva — índice (mensal)",
+       caption = "Fonte: IMF/IFS (EREER_IX) via DB.NOMICS", y = NULL) +
+  theme_report()
+to_plotly(p_fmi)
+```
+::::
